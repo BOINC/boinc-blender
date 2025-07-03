@@ -1,0 +1,6 @@
+bin/
+boincblender
+*.zip
+test_sample/
+*.png
+fraction_done
