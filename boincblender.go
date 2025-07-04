@@ -29,7 +29,7 @@ import (
 )
 
 func parseProgress(line string) (current, total int, found bool) {
-	re := regexp.MustCompile(` (\d+)\s?/\s?(\d+)$`)
+	re := regexp.MustCompile(` (\d+)\s?/\s?(\d+)`)
 	matches := re.FindStringSubmatch(line)
 	if len(matches) == 3 {
 		if curr, err := strconv.Atoi(matches[1]); err == nil {
@@ -64,6 +64,8 @@ func main() {
 		frame        = flag.Int("frame", 0, "Frame to render")
 		engine       = flag.String("engine", "CYCLES", "Render engine (CYCLES, EEVEE)")
 		cyclesDevice = flag.String("cyclesDevice", "CPU", "Cycles device to use (CPU, CUDA, OPTIX, HIP, ONEAPI, METAL)")
+		imageFormat  = flag.String("imageFormat", "PNG", "Image format for rendered output (TGA, RAWTGA, JPEG, IRIS, AVIRAW, AVIJPEG, PNG, BMP, HDR, TIFF)")
+		threads      = flag.Int("threads", 1, "Number of threads to use for rendering")
 		version      = flag.Bool("version", false, "Show version information")
 		help         = flag.Bool("help", false, "Show help")
 	)
@@ -87,14 +89,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	if !slices.Contains([]string{"TGA", "RAWTGA", "JPEG", "IRIS", "AVIRAW", "AVIJPEG", "PNG", "BMP", "HDR", "TIFF"}, *imageFormat) {
+		fmt.Println("Unsupported image format. Please use TGA, RAWTGA, JPEG, IRIS, AVIRAW, AVIJPEG, PNG, BMP, HDR, or TIFF.")
+		os.Exit(1)
+	}
+
 	fmt.Printf("BOINC Blender Application v%s\n", VERSION)
 	fmt.Printf("Blender Path: %s\n", *blenderPath)
 	fmt.Printf("Working directory: %s\n", *workDir)
 	fmt.Printf("Output directory: %s\n", *output)
 	fmt.Printf("Input file: %s\n", *inputFile)
 	fmt.Printf("Frame to render: %d\n", *frame)
+	fmt.Printf("Image format: %s\n", *imageFormat)
 	fmt.Printf("Render engine: %s\n", *engine)
-	fmt.Printf("Cycles device: %s\n", *cyclesDevice)
+	if *engine == "CYCLES" {
+		fmt.Printf("Cycles device: %s\n", *cyclesDevice)
+	}
+	fmt.Printf("Threads: %d\n", *threads)
 
 	var renderEngine = ""
 	var renderEngineArg = ""
@@ -116,13 +127,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	cmd := fmt.Sprintf("%s -b %s/%s -o %s/%s -F PNG -f %d -t 1 -E %s --factory-startup %s",
+	cmd := fmt.Sprintf("%s -b %s/%s -o %s/%s -F %s -f %d -t %d -E %s --factory-startup %s",
 		*blenderPath,
 		*workDir,
 		*inputFile,
 		*workDir,
 		*output,
+		*imageFormat,
 		*frame,
+		*threads,
 		renderEngine,
 		renderEngineArg,
 	)
