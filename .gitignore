@@ -4,3 +4,5 @@ boincblender
 test_sample/
 *.png
 fraction_done
+*.exe
+*.swp
